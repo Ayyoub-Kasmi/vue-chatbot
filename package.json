@@ -1,0 +1,40 @@
+{
+  "name": "vue-chatbot",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "files": ["dist", "src/components"],
+  "main": "./dist/vue-chatbot-lib.umd.cjs",
+  "module": "./dist/vue-chatbot-lib.js",
+  "exports": {
+    ".": {
+      "import": "./dist/vue-chatbot-lib.js",
+      "require": "./dist/vue-chatbot-lib.umd.cjs"
+    },
+    "./styles.css": "./dist/style.css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ayyoub-Kasmi/vue-chatbot.git"
+  },
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && vue-tsc --emitDeclarationOnly",
+    "types": "vue-tsc",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.3.4"
+  },
+  "peerDependencies": {
+    "vue": "3.x"
+  },
+  "devDependencies": {
+    "@types/node": "^20.2.5",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vue-tsc": "^1.8.5"
+  }
+}
