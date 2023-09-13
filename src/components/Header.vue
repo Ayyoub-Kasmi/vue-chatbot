@@ -1,12 +1,14 @@
 <template>
-  <div></div>
+  <div>
+    <slot></slot>
+  </div>
 </template>
 
 <script setup lang="ts">
-  import defaultTheme from '@/theme';
+  import defaultTheme from '../theme';
   import type ChatBotTheme from 'types/ChatBotTheme';
 
-  withDefaults(defineProps<{theme: ChatBotTheme}>(), {
+  withDefaults(defineProps<{theme?: ChatBotTheme}>(), {
     theme: () => defaultTheme
   })
 </script>

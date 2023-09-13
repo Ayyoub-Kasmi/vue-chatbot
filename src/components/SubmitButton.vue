@@ -3,18 +3,20 @@
     cursor: disabled ? 'default' : 'pointer',
     fill: fillFunc(speaking, invalid, theme),
     opacity: disabled && !invalid ? '.5' : '1',
-  }"></button>
+  }">
+    <slot></slot>
+  </button>
 </template>
 
 <script setup lang="ts">
-  import defaultTheme from '@/theme';
-import type ChatBotTheme from 'types/ChatBotTheme';
+  import defaultTheme from '../theme';
+  import type ChatBotTheme from 'types/ChatBotTheme';
 
   type Props = {
-    disabled: boolean;
-    invalid: boolean;
-    speaking: boolean;
-    theme: ChatBotTheme;
+    disabled?: boolean;
+    invalid?: boolean;
+    speaking?: boolean;
+    theme?: ChatBotTheme;
   }
 
   const { disabled, speaking, invalid, theme} = withDefaults(defineProps<Props>(), {

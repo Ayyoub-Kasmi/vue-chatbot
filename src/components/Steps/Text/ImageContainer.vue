@@ -6,14 +6,16 @@
 
 <script setup lang="ts">
   type Props = {
-    onClick?: Function
+    user?: boolean;
   }
 
   defineProps<Props>();
-
 </script>
+
 <style scoped>
   div {
-    cursor: pointer;
+    display: inline-block;
+    order: v-bind('user ? "1" : "0"');
+    padding: 6px;
   }
 </style>

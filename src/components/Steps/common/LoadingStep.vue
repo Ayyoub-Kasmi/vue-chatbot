@@ -1,19 +1,18 @@
 <template>
-  <div>
-    <slot></slot>
-  </div>
+  <span></span>
 </template>
 
 <script setup lang="ts">
   type Props = {
-    onClick?: Function
+    delay: string;
   }
 
   defineProps<Props>();
-
 </script>
+
 <style scoped>
-  div {
-    cursor: pointer;
+  span {
+    animation: loading 1.4s infinite both;
+    animation-delay: v-bind(delay);
   }
 </style>

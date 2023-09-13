@@ -1,61 +1,64 @@
 <template>
-  <div class="rsc">
+  <div class="vcb">
     
     <FloatButton
       v-if="floating" 
-      class="rsc-float-button"
+      class="vcb-float-button"
       :style="floatingStyle"
-      :opened="opened"
-      onclick="() => toggleChatBot(true)"
+      :theme="{headerBgColor: 'red'}"
+      :opened="isOpened"
+      @click="toggleChatBot(true)"
     >
       <FloatingIcon v-if="(typeof floatingIconProp) === 'string'" :src="(floatingIconProp as string)"/>
       <component v-else :is="floatingIconProp as DefineComponent"/>
     </FloatButton>
+
+    <BotDiv :opened="isOpened" @click="console.log('hii')" :disabled="disabled" :speaking="speaking" :invalid="inputInvalid"/>
     
     <ChatBotContainer
-      class="rsc-container"
+      class="vcb-container"
       :floating="floating"
       :floatingStyle="floatingStyle"
-      :opened="opened"
+      :opened="isOpened"
       :style="style"
       :width="width"
       :height="height"
-    >
+      >
       <template v-if="!hideHeader">
         <Header v-if="!HeaderComponent">
-          <HeaderTitle class="rsc-header-title">{headerTitle}</HeaderTitle>
-            <HeaderIcon v-if="floating" class="rsc-header-close-button" @click="() => toggleChatBot(false)">
-              <CloseIcon/>
-            </HeaderIcon>
+          <HeaderTitle class="vcb-header-title">{{ headerTitle }}</HeaderTitle>
+          <HeaderIcon v-if="floating" class="vcb-header-close-button">
+            <CloseIcon @click="toggleChatBot(false)"/>
+          </HeaderIcon>
         </Header>
-        <HeaderComponent v-else />
+        <HeaderComponent :toggleFloating="toggleFloating" v-else />
       </template>
 
       <Content
         v-if="!hideHeader"
-        class="rsc-content"
-        :ref="contentRef"
+        class="vcb-content"
+        :ref="(node: InstanceType<typeof Content>) => {contentRef = node?.$el}"
         :floating="floating"
         :style="contentStyle"
         :height="height"
         :hideInput="currentStep?.hideInput"
       >
-        <template v-for="step in renderSteps()" >
+        <template v-for="step in renderSteps()" :key="step.id" >
           <component :is="step.component" v-bind="step.props"></component>
         </template>
       </Content>
 
-      <Footer class="rsc-footer" :style="footerStyle">
+      <Footer class="vcb-footer" :style="footerStyle">
         <VueChatBotInput
-          v-if="currentStep?.hideInput"
+          v-if="!currentStep?.hideInput"
           type="textarea"
           class="rsc-input"
           
           :style="inputStyle"
-          ref="setInputRef"
+          :ref="(node: InstanceType<typeof VueChatBotInput>) => {input = node?.$el}"
           :placeholder="inputInvalid ? '' : inputPlaceholder"
-          :onchange="onValueChange"
-          :onkeypress="handleKeyPress"
+          @input="onValueChange"
+          @keypress="handleKeyPress"
           :value="inputValue"
           :floating="floating"
           :invalid="inputInvalid"
@@ -64,11 +67,11 @@
           v-bind="inputAttributesOverride"
         />
         
-        <div :style="controlStyle" class="rsc-controls">
-          <ExtraControl v-if="!currentStep?.hideInput && !currentStep?.hideExtraControl && ExtraControl" disabled={disabled.value} speaking={speaking.value} invalid={inputInvalid.value} />
+        <div :style="controlStyle" class="vcb-controls">
+          <ExtraControl v-if="!currentStep?.hideInput && !currentStep?.hideExtraControl && ExtraControl" :disabled="disabled" :speaking="speaking" :invalid="inputInvalid" />
           
           <SubmitButton
-            v-if="!currentStep?.hideInput && hideSubmitButton"
+            v-if="!currentStep?.hideInput && !hideSubmitButton"
             class="rsc-submit-button"
             :style="submitButtonStyle"
             :onclick="handleSubmitButton"
@@ -76,7 +79,7 @@
             :disabled="disabled"
             :speaking="speaking"
           >
-            <component :is="(isInputValueEmpty() || speaking) && recognitionEnable ? MicIcon : SubmitIcon" ></component>
+            <component :is="(isInputValueEmpty() || speaking) && isRecognitionEnabled ? MicIcon : SubmitIcon" ></component>
           </SubmitButton>
         </div>
       </Footer>
@@ -85,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+  import BotDiv from '../BotDiv.vue';
   import type { CSSProperties, Component, DefineComponent } from 'vue';
   import { ref, onMounted, onBeforeUnmount } from 'vue';
   import Random from 'random-id';
@@ -129,7 +133,13 @@
     ExtraControl?: DefineComponent<Component<{disabled:boolean, speaking:boolean, invalid: boolean}>>; 
     floating?: boolean;
     floatingIconProp?: string | DefineComponent;
-    floatingStyle?: CSSProperties;
+    floatingStyle?: {
+      top: string;
+      bottom: string;
+      left: string;
+      right: string;
+      transformOrigin: string;
+    };
     footerStyle?: CSSProperties;
     handleEnd?: Function;
     HeaderComponent?: DefineComponent;
@@ -142,7 +152,7 @@
     inputAttributes?: CSSProperties; 
     inputStyle?: CSSProperties;
     opened?: boolean
-    toggleFloating?: Function;
+    toggleFloating?: (newState:boolean) => {};
     placeholder?: string
     recognitionEnable?: boolean;
     recognitionLang?: string
@@ -160,11 +170,7 @@
     width?: string
   }
 
-  const {avatarStyle, botAvatar, botDelay, botName, bubbleStyle, bubbleOptionStyle, cache: useCache, cacheName, customDelay,
-    customStyle, enableMobileAutoFocus, enableSmoothScroll, ExtraControl, floating, handleEnd: handleEndProp, HeaderComponent, headerTitle, 
-    hideBotAvatar, hideUserAvatar, inputAttributes,
-    opened: isOpened, placeholder, recognitionEnable: isRecognitionEnable,recognitionLang, recognitionPlaceholder, speechSynthesis, steps, toggleFloating, userAvatar, 
-    userDelay} = withDefaults(defineProps<Props>(), {
+  const props = withDefaults(defineProps<Props>(), {
     avatarStyle: () => {return {}},
     botDelay: 1000,
     botName: 'The bot',
@@ -172,6 +178,7 @@
     bubbleStyle: () => {return {}},
     cache: false,
     cacheName: 'rsc_cache',
+    className: '',
     contentStyle: () => {return {}},
     customStyle: () => {return {}},
     controlStyle: () => { return {position: 'absolute', right: '0', top: '0'} },
@@ -180,7 +187,6 @@
     enableSmoothScroll: false,
     floating: false,
     floatingIcon: () => ChatIcon,
-    floatingStyle: () => {return {}},
     footerStyle: () => {return {}},
     headerTitle: 'Chat',
     height: '520px',
@@ -210,7 +216,7 @@
     userAvatar:
       "data:image/svg+xml,%3csvg viewBox='-208.5 21 100 100' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3e%3ccircle cx='-158.5' cy='71' fill='%23F5EEE5' r='50'/%3e%3cdefs%3e%3ccircle cx='-158.5' cy='71' id='a' r='50'/%3e%3c/defs%3e%3cclipPath id='b'%3e%3cuse overflow='visible' xlink:href='%23a'/%3e%3c/clipPath%3e%3cpath clip-path='url(%23b)' d='M-108.5 121v-14s-21.2-4.9-28-6.7c-2.5-.7-7-3.3-7-12V82h-30v6.3c0 8.7-4.5 11.3-7 12-6.8 1.9-28.1 7.3-28.1 6.7v14h100.1z' fill='%23E6C19C'/%3e%3cg clip-path='url(%23b)'%3e%3cdefs%3e%3cpath d='M-108.5 121v-14s-21.2-4.9-28-6.7c-2.5-.7-7-3.3-7-12V82h-30v6.3c0 8.7-4.5 11.3-7 12-6.8 1.9-28.1 7.3-28.1 6.7v14h100.1z' id='c'/%3e%3c/defs%3e%3cclipPath id='d'%3e%3cuse overflow='visible' xlink:href='%23c'/%3e%3c/clipPath%3e%3cpath clip-path='url(%23d)' d='M-158.5 100.1c12.7 0 23-18.6 23-34.4 0-16.2-10.3-24.7-23-24.7s-23 8.5-23 24.7c0 15.8 10.3 34.4 23 34.4z' fill='%23D4B08C'/%3e%3c/g%3e%3cpath d='M-158.5 96c12.7 0 23-16.3 23-31 0-15.1-10.3-23-23-23s-23 7.9-23 23c0 14.7 10.3 31 23 31z' fill='%23F2CEA5'/%3e%3c/svg%3e"
   })
-
+  
   // state declarations
   const contentRef = ref<HTMLElement>();
   const currentStep = ref<Step>({
@@ -227,8 +233,8 @@
     validator: () => {},
   })
   const defaultUserSettings = ref({
-    delay: userDelay,
-    avatar: userAvatar,
+    delay: props.userDelay,
+    avatar: props.userAvatar,
     hideInput: false,
     hideExtraControl: false
   })
@@ -236,16 +242,16 @@
   const input = ref<HTMLElement>();
   const inputValue = ref('')
   const inputInvalid = ref(false)
-  const opened = ref(isOpened || !floating)
+  const isOpened = ref(props.opened || !props.floating)
   const previousStep = ref<Step>()
   const previousSteps = ref<(Step)[]>([])
-  const recognitionEnable = ref(isRecognitionEnable && Recognition.isSupported())
+  const isRecognitionEnabled = ref(props.recognitionEnable && Recognition.isSupported())
   const recognition = ref<Recognition>()
   const renderedSteps = ref<(Step)[]>([])
   const stepsState = ref<StepsMap>(new Map())
   const supportsScrollBehavior = ref(false);
   const speaking = ref(false)
-  const speak = ref(speakFn(speechSynthesis))
+  const speak = ref(speakFn(props.speechSynthesis))
 
   // handlers for events
   const onRecognitionChange = (value:string) => {
@@ -264,7 +270,7 @@
   const onNodeInserted = (event:Event) => {
     const target = event.currentTarget as HTMLInputElement
     
-    if (enableSmoothScroll && supportsScrollBehavior.value) {
+    if (props.enableSmoothScroll && supportsScrollBehavior.value) {
       target.scroll({
         top: target.scrollHeight,
         left: 0,
@@ -331,10 +337,11 @@
   };
 
   const handleSubmitButton = () => {
-
-    if ((isInputValueEmpty() || speaking.value) && recognitionEnable.value) {
+    if ((isInputValueEmpty() || speaking.value) && isRecognitionEnabled.value) {
       recognition.value?.speak();
+
       if (!speaking.value) {
+        
         speaking.value = true;
       }
 
@@ -384,7 +391,7 @@
   };
 
   const handleEnd = () => {
-    if (handleEndProp) {
+    if (props.handleEnd) {
       const renderedSteps = previousSteps.value.map(step => {
         const { id, message, value, metadata } = step;
 
@@ -419,7 +426,7 @@
 
       const values = previousSteps.value.filter(step => step.value).map(step => step.value);
 
-      handleEndProp({ renderedSteps, steps, values });
+      props.handleEnd({ renderedSteps, steps, values });
     }
   };
 
@@ -441,12 +448,12 @@
         inputValue.value = value;
         inputInvalid.value = false;
         disabled.value = false;
-        if (enableMobileAutoFocus || !isMobile()) {
+        if (props.enableMobileAutoFocus || !isMobile()) {
           if (input.value) {
             input.value.focus();
           }
         }
-      }, 2000);
+      }, 1000);
 
       return true;
     }
@@ -456,12 +463,13 @@
 
   const submitUserMessage = () => {
 
-    const isInvalid = currentStep.value?.validator && checkInvalidInput();
+    const isInvalid = currentStep.value?.validator() && checkInvalidInput();
 
     if (!isInvalid) {
       const step = {
+        user: true,
         message: inputValue.value,
-        value: inputValue.value
+        value: inputValue.value,
       };
 
       currentStep.value = Object.assign({}, defaultUserSettings.value, currentStep.value, step);
@@ -479,10 +487,12 @@
   };
 
   const toggleChatBot = (newState:boolean) => {
-    if (toggleFloating) {
-      toggleFloating( newState );
+    console.log('toggleChatBot has run, new state is ', newState);
+    
+    if (props.toggleFloating) {
+      props.toggleFloating( newState );
     } else {
-      opened.value = newState;
+      isOpened.value = newState;
     }
   };
 
@@ -564,7 +574,7 @@
       if (nextStep.user) {
         disabled.value = false;
         
-        if (enableMobileAutoFocus || !isMobile()) {
+        if (props.enableMobileAutoFocus || !isMobile()) {
           if (input.value) {
             input.value.focus();
           }
@@ -577,9 +587,9 @@
       
     }
 
-    if (useCache) {
+    if (props.cache) {
       setTimeout(() => {
-        storage.setData(cacheName, {
+        storage.setData(props.cacheName, {
           currentStep: currentStep.value as Step,
           previousStep: previousStep.value,
           previousSteps: previousSteps.value,
@@ -591,15 +601,17 @@
 
   // setup the component on mount 
   onMounted(() => {
+    console.log('onMounted is gonna run!');
+    
     // this hold the actual chat steps
     const chatSteps:StepsMap = new Map();
   
     // import default settings
-    const defaultBotSettings = { delay: botDelay, avatar: botAvatar, botName };
-    const defaultCustomSettings = { delay: customDelay };
+    const defaultBotSettings = { delay: props.botDelay, avatar: props.botAvatar, botName: props.botName };
+    const defaultCustomSettings = { delay: props.customDelay };
 
     // parse the steps, and add them to the actual chat steps
-    const stepsArray = Array.from(steps.values());
+    const stepsArray = Array.from(props.steps.values());
 
     for (let i = 0, len = stepsArray.length; i < len; i += 1) {
       const step = stepsArray[i];
@@ -615,7 +627,7 @@
       } else if (step.component) {
         settings = defaultCustomSettings;
       }
-  
+      
       chatSteps.set(step.id, Object.assign({}, settings, schema.parse(step)) );
     }
   
@@ -623,7 +635,6 @@
   
     const firstStep = stepsArray[0];
     
-
     if (firstStep.message) {
       const { message } = firstStep;
       firstStep.message = typeof message === 'function' ? message() : message;
@@ -632,25 +643,23 @@
     }
   
     // check recognition feature
-    if (recognitionEnable.value) {
+    if (isRecognitionEnabled.value) {
       recognition.value = new Recognition(
-
         onRecognitionChange,
         onRecognitionEnd,
         onRecognitionStop,
-        recognitionLang
+        props.recognitionLang
       );
     }
   
     supportsScrollBehavior.value = 'scrollBehavior' in document.documentElement.style;
   
     if (contentRef.value) {
-      contentRef.value.addEventListener('DOMNodeInserted', onNodeInserted);
+      // contentRef.value.addEventListener('DOMNodeInserted', onNodeInserted);
       window.addEventListener('resize', onResize);
     }
   
     // fetch cached data, if any
-    
     const { 
       currentStep: cachedCurrentStep, 
       previousStep: cachedPreviousStep,
@@ -658,15 +667,17 @@
       renderedSteps: cachedRenderedSteps
     } = storage.getData(
       {
-        cacheName,
-        useCache: useCache,
+        cacheName: props.cacheName,
+        useCache: props.cache,
         firstStep,
         steps: chatSteps
       },
       () => {
         // focus input if last step cached is a user step
         disabled.value = false;
-        if (enableMobileAutoFocus || !isMobile()) {
+        if (props.enableMobileAutoFocus || !isMobile()) {
+          console.log('input will be focused');
+          
           if (input.value) input.value.focus();
         }
       }
@@ -679,15 +690,29 @@
     stepsState.value = chatSteps;
 
     // derive state from props
-    if (toggleFloating !== undefined && isOpened !== undefined && isOpened !== opened.value) opened.value = isOpened;
+    if (props.toggleFloating !== undefined && props.opened !== undefined && props.opened !== isOpened.value) isOpened.value = props.opened;
+
+    // scroll to the bottom of chat container
+    const target = contentRef.value as HTMLInputElement;
+    
+    if (props.enableSmoothScroll && supportsScrollBehavior.value) {
+      target.scroll({
+        top: target.scrollHeight,
+        left: 0,
+        behavior: 'smooth'
+      });
+    } else {
+      target.scrollTop = target.scrollHeight;
+    }
+    
+    if(input.value) input.value.focus();
   })
 
   onBeforeUnmount(()=>{
     if(contentRef.value) {
-      contentRef.value.removeEventListener('DOMNodeInserted', onNodeInserted);
+      // contentRef.value.removeEventListener('DOMNodeInserted', onNodeInserted);
       window.removeEventListener('resize', onResize);
     }
-    
   })
 
   // render variables & methods
@@ -704,7 +729,7 @@
           speak: speak.value,
           step,
           steps,
-          style: customStyle,
+          style: props.customStyle,
           previousStep,
           previousValue: previousStep.value,
           triggerNextStep,
@@ -720,7 +745,7 @@
           step,
           previousValue: previousStep.value,
           triggerNextStep,
-          bubbleOptionStyle,
+          bubbleOptionStyle: props.bubbleOptionStyle,
         }
       }
     }
@@ -735,10 +760,10 @@
         previousStep,
         previousValue: previousStep.value,
         triggerNextStep,
-        avatarStyle,
-        bubbleStyle,
-        hideBotAvatar,
-        hideUserAvatar,
+        avatarStyle: props.avatarStyle,
+        bubbleStyle: props.bubbleStyle,
+        hideBotAvatar: props.hideBotAvatar,
+        hideUserAvatar: props.hideUserAvatar,
         speechSynthesis,
         isFirst: isFirstPosition(step),
         isLast: isLastPosition(step)
@@ -748,9 +773,8 @@
 
   const renderSteps = () => renderedSteps.value.map((step, index) => renderVueStep(step, index))
 
-  const inputPlaceholder = speaking ? recognitionPlaceholder : currentStep.value?.placeholder || placeholder;
+  const inputPlaceholder = speaking.value ? props.recognitionPlaceholder : currentStep.value?.placeholder || props.placeholder;
 
-  const inputAttributesOverride = currentStep.value?.inputAttributes || inputAttributes;
-
+  const inputAttributesOverride = currentStep.value?.inputAttributes || props.inputAttributes;
 
 </script>

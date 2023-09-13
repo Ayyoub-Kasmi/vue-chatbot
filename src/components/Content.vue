@@ -1,5 +1,6 @@
 <template>
   <div :style="style">
+    <slot></slot>
   </div>
 </template>
 
@@ -7,8 +8,8 @@
   import type { CSSProperties } from 'vue';
 
   type Props = {
-    height: number;
-    floating: boolean;
+    height: string | number;
+    floating?: boolean;
     style?: CSSProperties;
     hideInput?: boolean;
   }
@@ -18,7 +19,7 @@
 
 <style scoped>
   div {
-    /* height: calc(); */
+    height: v-bind("`calc(${height} - ${hideInput ? '56px' : '112px'})`");
     overflow-y: scroll;
     margin-top: 2px;
     padding-top: 6px;

@@ -6,7 +6,7 @@ import HeaderIcon from './HeaderIcon.vue';
 import FloatButton from './FloatButton.vue';
 import FloatingIcon from './FloatingIcon.vue';
 import Footer from './Footer.vue';
-import Input from './Input.vue';
+import VueChatBotInput from './VueChatBotInput.vue';
 import SubmitButton from './SubmitButton.vue';
 
 export {
@@ -18,6 +18,6 @@ export {
   FloatButton,
   FloatingIcon,
   Footer,
-  Input,
+  VueChatBotInput,
   SubmitButton
 };

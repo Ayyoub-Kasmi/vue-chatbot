@@ -1,28 +1,26 @@
 <template>
-  <input type="text" :style="{
+  <input :type="type" :disabled="disabled" :style="{
     'border-top': invalid ? '0' : '1px solid #eee',
     'box-shadow': invalid ? 'inset 0 0 2px #E53935' : 'none',
     color: invalid ? '#E53935' : '',
     opacity: disabled && !invalid ? '.5' : '1',
     padding: hasButton ? '16px 52px 16px 10px' : '16px 10px',
-  }">
+  }" :placeholder="placeholder" />
 </template>
 
 <script setup lang="ts">
   type Props = {
+    type?: string;
     invalid: boolean;
     disabled: boolean;
     hasButton: boolean;
     floating: boolean;
+    placeholder?: string;
   }
 
-  const { invalid, disabled, hasButton, floating } = withDefaults(defineProps<Props>(), {
-    invalid: false,
-    disabled: false,
-    hasButton: true,
-    floating: true,
+  withDefaults(defineProps<Props>(), {
+    type: 'text'
   })
-
 </script>
 
 <style scoped>

@@ -3,7 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "files": ["dist", "src/components"],
+  "files": [
+    "dist",
+    "src/components"
+  ],
   "main": "./dist/vue-chatbot-lib.umd.cjs",
   "module": "./dist/vue-chatbot-lib.js",
   "exports": {
@@ -25,7 +28,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.4"
+    "flatted": "^3.2.7",
+    "random-id": "^1.0.4",
+    "vue": "3.x"
   },
   "peerDependencies": {
     "vue": "3.x"
